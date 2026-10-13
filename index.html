@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Book Moves</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+Symbols+2&display=swap">
+<link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+<!--BODY-START-->
+<div class="app">
+  <header class="top">
+    <div class="brand"><b>Book Moves</b><span>Opening flashcards</span></div>
+    <div class="boxes" id="boxes" aria-label="Leitner boxes"></div>
+  </header>
+
+  <main class="stage">
+    <div class="lastline" id="lastline" aria-live="polite"></div>
+    <section class="card" id="card" aria-labelledby="title">
+      <div class="card-head">
+        <div class="eyebrow">
+          <span class="eco" id="eco">—</span>
+          <span class="side" id="side"></span>
+          <span class="boxtag" id="boxtag"></span>
+          <span class="cardno" id="cardno"></span>
+        </div>
+        <h1 class="title" id="title">Loading the deck…</h1>
+      </div>
+      <div class="board-wrap" id="boardWrap">
+        <div class="board" id="board">
+          <div class="grid" id="grid"></div>
+          <svg class="arrows" viewBox="0 0 8 8" aria-hidden="true">
+            <defs><marker id="ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="2.6" markerHeight="2.6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" fill="var(--hint)"></path></marker></defs>
+            <g id="arrowg"></g>
+          </svg>
+        </div>
+        <div class="stamp" id="stamp" hidden></div>
+      </div>
+      <div class="status wait" id="status" aria-live="polite"><span class="tag" id="stag">Book</span><span class="msg" id="smsg">Shuffling the deck…</span><button type="button" class="sact" id="sact" hidden></button></div>
+      <div class="foot">
+        <ol class="moves" id="moves" aria-label="Moves played"></ol>
+        <span class="prog" id="prog"></span>
+      </div>
+    </section>
+  </main>
+
+  <details class="deck" id="deck">
+    <summary>Deck &amp; settings <small id="decksum"></small></summary>
+    <div class="deckbody" id="deckbody"></div>
+  </details>
+</div>
+<!--BODY-END-->
+<script src="vendor/chess.js"></script>
+<script src="deck.js?v=6"></script>
+<script src="core.js?v=6"></script>
+<script src="app.js?v=6"></script>
+</body>
+</html>
