@@ -28,6 +28,7 @@ browser's localStorage for `http://localhost:8000` (`bookmoves.leitner.v1`). It 
 | `app.js` | UI: board, move checking, card transitions |
 | `core.js` | Rules with no DOM: move trees, what counts as book, where a line ends, scoring, Leitner schedule |
 | `deck.js` | The 42 cards (generated; see below) |
+| `pieces.js` | Piece images: the cburnett set (CC BY-SA 3.0, Colin M.L. Burnett) |
 | `vendor/chess.js` | chess.js 0.10.3 (BSD-2-Clause) |
 | `tools/` | Deck builder and tests |
 

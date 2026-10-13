@@ -87,14 +87,12 @@ button{font:inherit;color:inherit}
 @keyframes flash{from{opacity:1}to{opacity:0}}
 .dotm{position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(20,30,20,.28);pointer-events:none;z-index:1}
 .dotm.cap{width:86%;height:86%;background:transparent;border:5px solid rgba(20,30,20,.26)}
-.coord{position:absolute;font-family:var(--f-mono);font-size:2.2cqw;font-weight:600;pointer-events:none;line-height:1}
+.coord{position:absolute;z-index:2;font-family:var(--f-mono);font-size:2.2cqw;font-weight:600;pointer-events:none;line-height:1}
 .coord.r{top:4%;left:5%} .coord.f{bottom:4%;right:6%}
 .sq.l .coord{color:var(--sq-d)} .sq.d .coord{color:var(--sq-l)}
-.pc{position:relative;z-index:1;font-family:var(--f-piece);font-size:10cqw;line-height:1;pointer-events:none;will-change:transform}
-.pc.w{color:#fbfbf7;text-shadow:0 0 1px #1b1f1b,0 0 1px #1b1f1b,0 0 1px #1b1f1b,0 1px 1px rgba(0,0,0,.4)}
-.pc.b{color:#1a1d1b;text-shadow:0 0 1px #f1f1ea,0 1px 1px rgba(0,0,0,.25)}
+.pc{position:absolute;inset:0;width:100%;height:100%;z-index:1;display:block;pointer-events:none;user-select:none;-webkit-user-drag:none;will-change:transform}
 .pc.ghost{opacity:.25}
-.drag{position:fixed;z-index:60;pointer-events:none;transform:translate(-50%,-55%);font-family:var(--f-piece);line-height:1}
+.drag{position:fixed;z-index:60;pointer-events:none;transform:translate(-50%,-50%) scale(1.08);background:center/100% 100% no-repeat}
 .arrows{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
 
 /* stamp */

@@ -2,8 +2,6 @@
 (function () {
   "use strict";
 
-  const GLYPH = { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" };
-  const VS = "︎";                 // text presentation, so pieces never render as emoji
   const FILES = "abcdefgh";
   const BOX_NAMES = { 1: "New & missed", 2: "Kinda knew", 3: "Growing confidence", 4: "Knew well" };
   const GRADE_TEXT = { knew: "Knew it", kinda: "Kinda knew", didnt: "Didn't know" };
@@ -118,7 +116,7 @@
       if (c === 0) html += `<span class="coord r">${name[1]}</span>`;
       if (r === 7) html += `<span class="coord f">${name[0]}</span>`;
       const p = game.get(name);
-      if (p) html += `<span class="pc ${p.color}">${GLYPH[p.type]}${VS}</span>`;
+      if (p) html += `<img class="pc" src="${PIECES[p.color + p.type]}" alt="" draggable="false">`;
       if (legal.some(m => m.to === name)) html += `<span class="dotm${p ? " cap" : ""}"></span>`;
       d.innerHTML = html;
       frag.appendChild(d);
@@ -339,8 +337,8 @@
     if (p && p.color === S.side) {
       S.sel = sq; renderBoard();
       const el = document.createElement("span");
-      el.className = "drag pc " + p.color; el.textContent = GLYPH[p.type] + VS;
-      el.style.fontSize = boardEl.clientWidth * 0.1 + "px";
+      el.className = "drag"; el.style.backgroundImage = `url("${PIECES[p.color + p.type]}")`;
+      el.style.width = el.style.height = boardEl.clientWidth / 8 + "px";
       el.style.left = e.clientX + "px"; el.style.top = e.clientY + "px"; el.hidden = true;
       document.body.appendChild(el);
       drag = { from: sq, el, x: e.clientX, y: e.clientY, moved: false };
