@@ -37,7 +37,7 @@
   function moveLabel(i) { const m = S.log[i]; return m ? (i % 2 === 0 ? `${i / 2 + 1}.` : `${(i + 1) / 2}…`) + m.san : ""; }
 
   /* ---------- persistence: browser copy for instant load; private per-user store when hosted on claude.ai ---------- */
-  const LS_KEY = "bookmoves.leitner.v1", LEN_KEY = "bookmoves.length";
+  const LS_KEY = "bookmoves.leitner.v1";
   function sanitize(doc) {
     const out = { v: 1, step: 0, cards: {} };
     if (!doc || typeof doc !== "object") return out;
@@ -47,7 +47,7 @@
       const e = C[id];
       if (!byId[id] || !e || typeof e !== "object") continue;
       out.cards[id] = {
-        box: Math.min(4, Math.max(1, Math.round(e.box || 1))), seen: e.seen || 1,
+        box: Math.min(4, Math.max(1, Math.round(e.box || 1))), seen: e.seen || 1, lvl: [0, 1, 2].includes(e.lvl) ? e.lvl : 0,
         due: Number.isFinite(e.due) ? e.due : 0,
         grade: ["knew", "kinda", "didnt"].includes(e.grade) ? e.grade : "didnt", acc: e.acc || 0, at: e.at || 0
       };
@@ -56,8 +56,6 @@
   }
   function loadLocal() { try { return sanitize(JSON.parse(localStorage.getItem(LS_KEY))); } catch (e) { return sanitize(null); } }
   function saveLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(S.state)); } catch (e) {} }
-  function loadLen() { try { const v = localStorage.getItem(LEN_KEY); return LENGTH_TEXT[v] ? v : "standard"; } catch (e) { return "standard"; } }
-  function saveLen() { try { localStorage.setItem(LEN_KEY, S.len); } catch (e) {} }
 
   const remote = { ref: null, busy: false, again: false };
   async function saveRemote() {
@@ -180,7 +178,7 @@
       `<div class="bx${curBox === "new" ? " cur" : ""}" title="Not studied yet"><small>New</small><b>${n.fresh}</b></div>`;
     if (bumpBox) setTimeout(() => { const el = $("boxes").querySelector(".bump"); if (el) el.classList.remove("bump"); }, 260);
     if (S.card) {
-      $("boxtag").textContent = cur ? `Box ${cur.box}` : "New card";
+      $("boxtag").textContent = (cur ? `Box ${cur.box}` : "New card") + ` · ${LENGTH_TEXT[S.len].label} line`;
       $("cardno").textContent = `${String(NUM[S.card.id]).padStart(2, "0")} / ${ORDER.length}`;
     }
     const L = S.lastResult;
@@ -192,11 +190,8 @@
   function renderDeck() {
     const step = S.state.step || 0, n = boxCounts();
     const due = ORDER.filter(id => S.state.cards[id] && S.state.cards[id].due <= step).length;
-    $("decksum").textContent = `${ORDER.length} openings · ${due} due · ${n.fresh} new · ${LENGTH_TEXT[S.len].label} lines`;
-    const settings = `<div class="settings"><div class="setrow"><span class="setlabel">Line length</span>
-      <div class="seg" role="radiogroup" aria-label="Line length">${Core.LENGTHS.map(k =>
-        `<button type="button" role="radio" aria-checked="${S.len === k}" data-len="${k}">${LENGTH_TEXT[k].label}</button>`).join("")}</div></div>
-      <p class="sethint">${esc(LENGTH_TEXT[S.len].hint)}</p></div>`;
+    $("decksum").textContent = `${ORDER.length} openings · ${due} due · ${n.fresh} new`;
+    const settings = `<div class="settings"><p class="sethint">Every card starts with a Short line. Play it perfectly and it moves to the back of the deck with a Standard line, then a Full line.</p></div>`;
     const groups = [1, 2, 3, 4]
       .map(b => ({ title: `Box ${b}`, sub: BOX_NAMES[b], ids: DISPLAY.filter(id => S.state.cards[id] && S.state.cards[id].box === b) }))
       .concat([{ title: "New", sub: "Not studied yet", ids: DISPLAY.filter(id => !S.state.cards[id]) }])
@@ -204,7 +199,7 @@
     const list = groups.map(g => `<div class="group"><h3>${g.title} <em>${g.sub}</em></h3>` +
       g.ids.map(id => {
         const c = byId[id], e = S.state.cards[id];
-        const right = e ? `<span class="chip ${e.grade}">${e.acc}%</span>${e.due <= step ? "due" : "in " + (e.due - step)}` : "";
+        const right = e ? `${LENGTH_TEXT[Core.levelOf(S.state, id)].label} · <span class="chip ${e.grade}">${e.acc}%</span>${e.due <= step ? "due" : "in " + (e.due - step)}` : "Short";
         return `<button type="button" class="row${S.card && S.card.id === id ? " cur" : ""}" data-id="${id}"><span class="n">${String(NUM[id]).padStart(2, "0")}</span><span class="dot ${c.s}"></span><span class="t">${esc(c.t)}</span><span class="r">${right}</span></button>`;
       }).join("") + `</div>`).join("");
     const where = remote.ref ? "Progress saves to your claude.ai account." : "Progress is saved in this browser.";
@@ -219,7 +214,7 @@
     S.card = card;
     try { S.graph = graphs[id] || (graphs[id] = Core.buildGraph(card, Chess)); }
     catch (e) { setStatus("bad", "Error", "This opening's data failed to load. Pick another card from the deck."); return; }
-    S.game = new Chess(); S.side = card.s;
+    S.game = new Chess(); S.side = card.s; S.len = Core.levelOf(S.state, id);
     Object.assign(S, { tries: 0, moveCount: 0, movePts: 0, log: [], sel: null, last: null, arrows: [] });
     $("eco").textContent = card.e || "—";
     $("side").innerHTML = `<span class="dot ${card.s}"></span>You play ${card.s === "w" ? "White" : "Black"}`;
@@ -292,7 +287,7 @@
     S.phase = "done";
     setStatus("done", "Middlegame", `End of the opening. Moves: ${fmtPts(S.movePts)} of ${S.moveCount}.`);
     setTimeout(() => {                                   // build the likely next card's tree meanwhile
-      const guess = Core.pickNext(Core.record(S.state, S.card.id, { grade: "kinda", acc: 0.75 }), ORDER, S.card.id, family);
+      const guess = Core.pickNext(Core.record(S.state, S.card.id, { grade: "kinda", acc: 0.75 }, ORDER.length), ORDER, S.card.id, family);
       if (!graphs[guess]) { try { graphs[guess] = Core.buildGraph(byId[guess], Chess); } catch (e) {} }
     }, 60);
     later(finishCard, 900);
@@ -302,15 +297,20 @@
     S.phase = "transition";
     const id = S.card.id, prev = S.state.cards[id], from = prev ? "Box " + prev.box : "New";
     const res = Core.grade(S.movePts, S.moveCount);
-    S.state = Core.record(S.state, id, res);
+    const rec = Core.record(S.state, id, res, ORDER.length);
+    const levelUp = rec.levelUp; delete rec.levelUp;
+    S.state = rec;
+    const nextLen = LENGTH_TEXT[Core.levelOf(S.state, id)].label;
     const to = S.state.cards[id].box, acc = Math.round(res.acc * 100);
     S.lastResult = { id, grade: res.grade, acc, from, to };
     persist();
     const st = $("stamp");
     st.className = "stamp " + res.grade;
-    st.innerHTML = `<b>${GRADE_TEXT[res.grade]}</b><small>${acc}% · ${from} → Box ${to}</small>`;
+    st.innerHTML = `<b>${GRADE_TEXT[res.grade]}</b><small>${acc}% · ${from} → Box ${to}</small>` +
+      (levelUp ? `<small class="lvlup">Next time: ${nextLen} line</small>` : "");
     st.hidden = false;
-    setStatus("done", GRADE_TEXT[res.grade], `Moves ${fmtPts(S.movePts)} of ${S.moveCount}.`);
+    setStatus("done", GRADE_TEXT[res.grade], `Moves ${fmtPts(S.movePts)} of ${S.moveCount}.` +
+      (levelUp ? ` Back of the deck, next time with a ${nextLen} line.` : ""));
     renderChrome(to);
     const cardEl = $("card");
     later(() => {
@@ -365,12 +365,6 @@
   boardEl.addEventListener("pointercancel", () => { if (drag) { drag.el.remove(); drag = null; renderBoard(); } });
 
   $("deckbody").addEventListener("click", e => {
-    const seg = e.target.closest(".seg button");
-    if (seg) {
-      S.len = seg.dataset.len; saveLen();       // takes effect from your next move
-      renderDeck(); renderMoves();
-      return;
-    }
     const row = e.target.closest(".row");
     if (row) {
       if (S.phase === "transition") return;
@@ -393,7 +387,7 @@
   /* ---------- boot ---------- */
   function boot(data) {
     if (typeof Chess !== "function") { setStatus("bad", "Offline", "The chess engine didn't load. Check your connection and reload."); return; }
-    S.state = loadLocal(); S.len = loadLen();
+    S.state = loadLocal();
     const want = data && data.cardId && byId[data.cardId] ? data.cardId : Core.pickNext(S.state, ORDER, null, family);
     startCard(want);
     connectRemote();

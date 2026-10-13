@@ -17,8 +17,7 @@ Open <http://localhost:8000>. Stop the server with `Ctrl+C`.
 
 There is no build step. chess.js is bundled in `vendor/`, so the app works offline; the fonts come from
 Google Fonts when you're online and fall back to system fonts otherwise. Progress is stored in the
-browser's localStorage for `http://localhost:8000` (`bookmoves.leitner.v1`, plus `bookmoves.length` for the
-line-length setting). It is separate from the claude.ai version.
+browser's localStorage for `http://localhost:8000` (`bookmoves.leitner.v1`). It is separate from the claude.ai version.
 
 ## Files
 
@@ -42,11 +41,14 @@ random and any of them counts for you.
 continue. If the wrong move is a real move from a different line, the message says so.
 
 **End of the opening.** Each card has `p`, the half-move (ply) of the move that names the variation, such as
-9...Na5 in the Chigorin (ply 18). The line-length setting decides the end:
+9...Na5 in the Chigorin (ply 18). Every card climbs three line lengths:
 
-- **Short**: your first move at or after that ply. The card ends once the variation is on the board.
-- **Standard** (default): two more moves for each side (4 plies) after it.
+- **Short** (where every card starts): ends with your first move at or after that ply.
+- **Standard**: two more moves for each side (4 plies) after it.
 - **Full**: the whole stored book line, about move 9–14.
+
+A perfect run (every move right on the first try) moves the card up one length and sends it to the back of the
+deck. Misses keep the card at its current length.
 
 **Scoring.** A move found on the first try is worth 1, on the second try ½, and with the arrow 0.
 Accuracy = points ÷ your moves.

@@ -90,13 +90,21 @@
     if (g === "kinda") return box <= 1 ? 2 : box >= 4 ? 3 : box;
     return 1;
   }
-  function record(state, id, res) {
-    const prev = state.cards[id] || { box: 1, seen: 0 };
+  /* Each card climbs three line lengths: it starts Short; a perfect run moves it up to Standard,
+     then Full, and sends it to the back of the queue (after every other card). Misses keep the level.
+     Leitner boxes work as usual on top of that. */
+  function record(state, id, res, deckSize) {
+    const prev = state.cards[id] || { box: 1, seen: 0, lvl: 0 };
     const step = (state.step || 0) + 1;
     const box = nextBox(prev.box, res.grade);
-    const entry = { box, seen: prev.seen + 1, due: step + GAP[box], grade: res.grade, acc: Math.round(res.acc * 100), at: Date.now() };
-    return { v: 1, step, cards: Object.assign({}, state.cards, { [id]: entry }) };
+    const lvl0 = prev.lvl || 0;
+    const levelUp = res.grade === "knew" && lvl0 < 2;
+    const lvl = levelUp ? lvl0 + 1 : lvl0;
+    const due = step + (levelUp ? Math.max(GAP[box], deckSize || 42) : GAP[box]);
+    const entry = { box, lvl, seen: prev.seen + 1, due, grade: res.grade, acc: Math.round(res.acc * 100), at: Date.now() };
+    return { v: 1, step, cards: Object.assign({}, state.cards, { [id]: entry }), levelUp };
   }
+  const levelOf = (state, id) => LENGTHS[Math.min(2, (state.cards[id] && state.cards[id].lvl) || 0)];
 
   // Missed cards (box 1) come back first; otherwise new cards alternate with due reviews,
   // and new cards pause while six or more cards sit in box 1.
@@ -125,5 +133,5 @@
   }
 
   return { key, buildGraph, options, isEnd, accepts, LENGTHS, targetPly, lineDone, plannedMoves,
-    movePoints, grade, GAP, nextBox, record, pickNext };
+    movePoints, grade, GAP, nextBox, record, levelOf, pickNext };
 });
