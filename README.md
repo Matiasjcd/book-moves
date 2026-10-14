@@ -52,12 +52,20 @@ A perfect run (every move right on the first try) moves the card up one length a
 deck. Misses keep the card at its current length.
 
 **Scoring.** A move found on the first try is worth 1, on the second try ½, and with the arrow 0.
-Accuracy = points ÷ your moves.
+Accuracy = points ÷ your moves. Each card gets one of five grades in 20% bands:
 
-**Leitner (four boxes, like LawMaster).** *Knew it* (100%) moves the card up a box. *Kinda knew* (above 50%) puts it
-in box 2, or box 3 if it was in 3 or 4. *Didn't know* (50% or less) sends it back to box 1. A card comes due again
-3 / 6 / 12 / 24 cards later for boxes 1–4. Missed cards come back first; otherwise new cards alternate with due
-reviews, and new cards pause while six or more cards sit in box 1.
+| Accuracy | Grade | Leitner box |
+| --- | --- | --- |
+| 80–100% | Nailed it (100% shows as *Perfect*) | up one |
+| 60–79% | Solid | stays |
+| 40–59% | Shaky | down one |
+| 20–39% | Weak | down two |
+| 0–19% | Didn't know | back to box 1 |
+
+**Leitner (five boxes).** Box 1 holds new and missed cards; box 5 is mastered. A card comes due again
+3 / 6 / 12 / 24 / 40 cards later for boxes 1–5. Missed cards come back first; otherwise new cards alternate with
+due reviews, and new cards pause while six or more cards sit in box 1. A perfect run also moves the card up a line
+length (see above) and sends it to the back of the deck.
 
 ## Rebuild or extend the deck
 

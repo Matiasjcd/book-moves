@@ -52,7 +52,8 @@ console.log(`average moves you play: short ${mean(avg.short)} | standard ${mean(
 
 // Scoring thresholds
 const g = Core.grade;
-if (g(10, 10).grade !== "knew" || g(9.5, 10).grade !== "kinda" || g(5, 10).grade !== "didnt") fail("grade thresholds");
+const bands = [[10, "g5", true], [8, "g5", false], [7.5, "g4", false], [6, "g4", false], [5.5, "g3", false], [4, "g3", false], [2, "g2", false], [1.5, "g1", false], [0, "g1", false]];
+for (const [pts, want, perf] of bands) { const r = g(pts, 10); if (r.grade !== want || r.perfect !== perf) fail("grade band", pts, r.grade); }
 
 // Leitner: every learner profile should eventually see the whole deck, with no immediate repeats
 const ORDER = DECK.map(c => c.id);
@@ -62,14 +63,15 @@ function simulate(label, skill, reviews) {
     const id = Core.pickNext(st, ORDER, prev);
     if (id === prev) fail("same card twice in a row", id);
     const k = skill(id, (st.cards[id] || {}).seen || 0, Math.random());
-    st = Core.record(st, id, { grade: k, acc: k === "knew" ? 1 : k === "kinda" ? 0.8 : 0.3 });
+    const acc = { g5: 1, g4: 0.7, g3: 0.5, g2: 0.3, g1: 0.1 }[k];
+    st = Core.record(st, id, Core.grade(acc * 10, 10), ORDER.length);
     prev = id;
   }
-  const boxes = [1, 2, 3, 4].map(b => Object.values(st.cards).filter(e => e.box === b).length);
+  const boxes = [1, 2, 3, 4, 5].map(b => Object.values(st.cards).filter(e => e.box === b).length);
   console.log(`${label.padEnd(24)} seen ${Object.keys(st.cards).length}/${ORDER.length}  boxes ${JSON.stringify(boxes)}`);
 }
-simulate("strong learner", (id, seen, r) => (r < 0.75 ? "knew" : r < 0.95 ? "kinda" : "didnt"), 150);
-simulate("average learner", (id, seen, r) => (r < 0.35 ? "knew" : r < 0.75 ? "kinda" : "didnt"), 150);
-simulate("slow learner", (id, seen, r) => (r < 0.1 + seen * 0.15 ? "knew" : r < 0.4 + seen * 0.1 ? "kinda" : "didnt"), 150);
+simulate("strong learner", (id, seen, r) => (r < 0.6 ? "g5" : r < 0.85 ? "g4" : r < 0.95 ? "g3" : "g2"), 150);
+simulate("average learner", (id, seen, r) => (r < 0.3 ? "g5" : r < 0.55 ? "g4" : r < 0.75 ? "g3" : r < 0.9 ? "g2" : "g1"), 150);
+simulate("slow learner", (id, seen, r) => (r < 0.1 + seen * 0.15 ? "g5" : r < 0.3 + seen * 0.1 ? "g4" : r < 0.5 + seen * 0.05 ? "g3" : r < 0.75 ? "g2" : "g1"), 150);
 console.log(problems ? `${problems} problems` : "all checks passed");
 process.exit(problems ? 1 : 0);

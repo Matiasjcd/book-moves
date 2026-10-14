@@ -77,20 +77,26 @@
 
   // Scoring: first try 1, second try ½, needed the arrow 0. Accuracy = points ÷ your moves.
   const movePoints = tries => (tries === 0 ? 1 : tries === 1 ? 0.5 : 0);
+  // Five grades in 20% bands: g1 = 0–19%, g2 = 20–39%, g3 = 40–59%, g4 = 60–79%, g5 = 80–100%.
+  const GRADES = ["g1", "g2", "g3", "g4", "g5"];
   function grade(movePts, moveCount) {
     const acc = moveCount ? movePts / moveCount : 0;
-    return { acc, grade: acc >= 0.9999 ? "knew" : acc > 0.5 ? "kinda" : "didnt" };
+    const band = Math.min(4, Math.floor(acc * 5 + 1e-9));
+    return { acc, grade: GRADES[band], perfect: acc >= 0.9999 };
   }
 
-  // LawMaster-style boxes: knew moves up a box, kinda knew sits in box 2-3, didn't know goes back to box 1.
+  // Five Leitner boxes. 80–100% moves the card up a box, 60–79% keeps it, 40–59% drops it one,
+  // 20–39% drops it two, 0–19% sends it back to box 1.
   // GAP = how many cards later a box comes due again.
-  const GAP = { 1: 3, 2: 6, 3: 12, 4: 24 };
+  const BOXES = 5;
+  const GAP = { 1: 3, 2: 6, 3: 12, 4: 24, 5: 40 };
+  const SHIFT = { g5: 1, g4: 0, g3: -1, g2: -2 };
   function nextBox(box, g) {
-    if (g === "knew") return Math.min(4, box + 1);
-    if (g === "kinda") return box <= 1 ? 2 : box >= 4 ? 3 : box;
-    return 1;
+    if (g === "g1") return 1;
+    return Math.max(1, Math.min(BOXES, box + SHIFT[g]));
   }
-  /* Each card climbs three line lengths: it starts Short; a perfect run moves it up to Standard,
+
+  /* Each card climbs three line lengths: it starts Short; a perfect run (100%) moves it up to Standard,
      then Full, and sends it to the back of the queue (after every other card). Misses keep the level.
      Leitner boxes work as usual on top of that. */
   function record(state, id, res, deckSize) {
@@ -98,7 +104,7 @@
     const step = (state.step || 0) + 1;
     const box = nextBox(prev.box, res.grade);
     const lvl0 = prev.lvl || 0;
-    const levelUp = res.grade === "knew" && lvl0 < 2;
+    const levelUp = !!res.perfect && lvl0 < 2;
     const lvl = levelUp ? lvl0 + 1 : lvl0;
     const due = step + (levelUp ? Math.max(GAP[box], deckSize || 42) : GAP[box]);
     const entry = { box, lvl, seen: prev.seen + 1, due, grade: res.grade, acc: Math.round(res.acc * 100), at: Date.now() };
@@ -133,5 +139,5 @@
   }
 
   return { key, buildGraph, options, isEnd, accepts, LENGTHS, targetPly, lineDone, plannedMoves,
-    movePoints, grade, GAP, nextBox, record, levelOf, pickNext };
+    movePoints, GRADES, grade, BOXES, GAP, nextBox, record, levelOf, pickNext };
 });

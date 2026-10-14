@@ -3,8 +3,9 @@
   "use strict";
 
   const FILES = "abcdefgh";
-  const BOX_NAMES = { 1: "New & missed", 2: "Kinda knew", 3: "Growing confidence", 4: "Knew well" };
-  const GRADE_TEXT = { knew: "Knew it", kinda: "Kinda knew", didnt: "Didn't know" };
+  const BOX_NAMES = { 1: "New & missed", 2: "Shaky", 3: "Getting there", 4: "Solid", 5: "Mastered" };
+  const GRADE_TEXT = { g5: "Nailed it", g4: "Solid", g3: "Shaky", g2: "Weak", g1: "Didn't know" };
+  const OLD_GRADES = { knew: "g5", kinda: "g3", didnt: "g1" };   // saves from the three-grade version
   const LENGTH_TEXT = {
     short: { label: "Short", hint: "The card ends as soon as the variation is on the board." },
     standard: { label: "Standard", hint: "Two more moves for each side after the move that names the variation." },
@@ -45,9 +46,9 @@
       const e = C[id];
       if (!byId[id] || !e || typeof e !== "object") continue;
       out.cards[id] = {
-        box: Math.min(4, Math.max(1, Math.round(e.box || 1))), seen: e.seen || 1, lvl: [0, 1, 2].includes(e.lvl) ? e.lvl : 0,
+        box: Math.min(Core.BOXES, Math.max(1, Math.round(e.box || 1))), seen: e.seen || 1, lvl: [0, 1, 2].includes(e.lvl) ? e.lvl : 0,
         due: Number.isFinite(e.due) ? e.due : 0,
-        grade: ["knew", "kinda", "didnt"].includes(e.grade) ? e.grade : "didnt", acc: e.acc || 0, at: e.at || 0
+        grade: Core.GRADES.includes(e.grade) ? e.grade : (OLD_GRADES[e.grade] || "g1"), acc: e.acc || 0, at: e.at || 0
       };
     }
     return out;
@@ -164,14 +165,14 @@
     $("prog").textContent = S.len === "full" ? `${done} of up to ${total} moves` : `${done} of ${total} moves`;
   }
   function boxCounts() {
-    const n = { 1: 0, 2: 0, 3: 0, 4: 0, fresh: 0 };
+    const n = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, fresh: 0 };
     for (const id of ORDER) { const e = S.state.cards[id]; if (e) n[e.box]++; else n.fresh++; }
     return n;
   }
   function renderChrome(bumpBox) {
     const n = boxCounts(), cur = S.card && S.state.cards[S.card.id];
     const curBox = cur ? cur.box : "new";
-    $("boxes").innerHTML = [1, 2, 3, 4].map(b =>
+    $("boxes").innerHTML = [1, 2, 3, 4, 5].map(b =>
       `<div class="bx${curBox === b ? " cur" : ""}${bumpBox === b ? " bump" : ""}" title="${BOX_NAMES[b]}"><small>Box ${b}</small><b>${n[b]}</b></div>`).join("") +
       `<div class="bx${curBox === "new" ? " cur" : ""}" title="Not studied yet"><small>New</small><b>${n.fresh}</b></div>`;
     if (bumpBox) setTimeout(() => { const el = $("boxes").querySelector(".bump"); if (el) el.classList.remove("bump"); }, 260);
@@ -190,7 +191,7 @@
     const due = ORDER.filter(id => S.state.cards[id] && S.state.cards[id].due <= step).length;
     $("decksum").textContent = `${ORDER.length} openings · ${due} due · ${n.fresh} new`;
     const settings = `<div class="settings"><p class="sethint">Every card starts with a Short line. Play it perfectly and it moves to the back of the deck with a Standard line, then a Full line.</p></div>`;
-    const groups = [1, 2, 3, 4]
+    const groups = [1, 2, 3, 4, 5]
       .map(b => ({ title: `Box ${b}`, sub: BOX_NAMES[b], ids: DISPLAY.filter(id => S.state.cards[id] && S.state.cards[id].box === b) }))
       .concat([{ title: "New", sub: "Not studied yet", ids: DISPLAY.filter(id => !S.state.cards[id]) }])
       .filter(g => g.ids.length);
@@ -285,7 +286,7 @@
     S.phase = "done";
     setStatus("done", "Middlegame", `End of the opening. Moves: ${fmtPts(S.movePts)} of ${S.moveCount}.`);
     setTimeout(() => {                                   // build the likely next card's tree meanwhile
-      const guess = Core.pickNext(Core.record(S.state, S.card.id, { grade: "kinda", acc: 0.75 }, ORDER.length), ORDER, S.card.id, family);
+      const guess = Core.pickNext(Core.record(S.state, S.card.id, { grade: "g4", acc: 0.7, perfect: false }, ORDER.length), ORDER, S.card.id, family);
       if (!graphs[guess]) { try { graphs[guess] = Core.buildGraph(byId[guess], Chess); } catch (e) {} }
     }, 60);
     later(finishCard, 900);
@@ -304,10 +305,10 @@
     persist();
     const st = $("stamp");
     st.className = "stamp " + res.grade;
-    st.innerHTML = `<b>${GRADE_TEXT[res.grade]}</b><small>${acc}% · ${from} → Box ${to}</small>` +
+    st.innerHTML = `<b>${res.perfect ? "Perfect" : GRADE_TEXT[res.grade]}</b><small>${acc}% · ${from} → Box ${to}</small>` +
       (levelUp ? `<small class="lvlup">Next time: ${nextLen} line</small>` : "");
     st.hidden = false;
-    setStatus("done", GRADE_TEXT[res.grade], `Moves ${fmtPts(S.movePts)} of ${S.moveCount}.` +
+    setStatus("done", res.perfect ? "Perfect" : GRADE_TEXT[res.grade], `Moves ${fmtPts(S.movePts)} of ${S.moveCount}.` +
       (levelUp ? ` Back of the deck, next time with a ${nextLen} line.` : ""));
     renderChrome(to);
     const cardEl = $("card");
